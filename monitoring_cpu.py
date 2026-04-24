@@ -12,13 +12,13 @@ class SystemMonitor:
     def __init__(self, log_file="system_history.jsonl"):
         self.log_file = log_file
         self.max_bytes = 10 * 1024 * 1024  # 10 MB
-        self.backup_count = 5             # Зберігати 5 старих файлів (разом 50-60 MB)
-        
+        self.backup_count = 5             # save a maximum of 5 log files
+        self.cpu_threshold = 80.0
         self._setup_logging()
-        print(f"--- Моніторинг запущено. Ротація: {self.max_bytes/1024/1024}MB ---")
+        print(f"--- Monitoring started. Rotation: {self.max_bytes/1024/1024}MB ---")
 
     def _setup_logging(self):
-        # Налаштовуємо спеціальний обробник для ротації
+        # setting up a rotating file handler
         handler = RotatingFileHandler(
             self.log_file, 
             maxBytes=self.max_bytes, 
@@ -26,13 +26,13 @@ class SystemMonitor:
             encoding='utf-8'
         )
         
-        # Налаштовуємо логгер
+        # setting up the logger
         self.logger = logging.getLogger("SystemMonitor")
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(handler)
 
     def collect_data(self):
-        # Збір даних (твій оптимізований метод)
+        # collecting CPU and RAM usage data
         cpu_usage = psutil.cpu_percent(interval=1)
         ram = psutil.virtual_memory()
         
@@ -61,22 +61,22 @@ class SystemMonitor:
 
                 if data['cpu_total'] > self.cpu_threshold:
                     if self.last_alert_time is None or \
-                        (datetime.now() - self.last_alert_time).total_seconds() > 300:  # 5 хвилин
-                        msg = f"⚠️ КРИТИЧНЕ НАВАНТАЖЕННЯ: CPU {data['cpu_total']}%"
+                        (datetime.now() - self.last_alert_time).total_seconds() > 300:  # 5 minutes
+                        msg = f"⚠️ CRITICAL LOAD: CPU {data['cpu_total']}%"
 
                         send_telegram(msg)
                         self.last_alert_time = datetime.now()
 
                     self.logger.info(json.dumps(data, ensure_ascii=False))
-                    print(f"[{data['timestamp']}] CPU: {data['cpu_total']}% | Записано в лог")    
+                    print(f"[{data['timestamp']}] CPU: {data['cpu_total']}% | Recorded in log")    
 
-                # Записуємо JSON як один рядок у лог
+                # Recording JSON as a single line in the log
                 self.logger.info(json.dumps(data, ensure_ascii=False))
                 
-                print(f"[{data['timestamp']}] CPU: {data['cpu_total']}% | Записано в лог")
-                time.sleep(5)
+                print(f"[{data['timestamp']}] CPU: {data['cpu_total']}% | Recorded in log")
+                time.sleep(60)
         except KeyboardInterrupt:
-            print("\nМоніторинг зупинено.")
+            print("\nMonitoring stopped.")
 
 if __name__ == "__main__":
     monitor = SystemMonitor()

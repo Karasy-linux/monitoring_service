@@ -3,5 +3,4 @@ __pycache__/
 *.pyc
 config.py
 system_history.jsonl
-tg_sender.py
 *.log
